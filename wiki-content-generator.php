@@ -45,30 +45,24 @@ function ai_content_generator_page() {
 }
 
 function generate_ai_post($keyword) {
-    $openai_api_key = 'put your api key here';
-    $url = "https://api.openai.com/v1/completions";
+    $url = "https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro&explaintext&titles=" . urlencode($keyword);
     
-    $data = [
-        'model' => 'gpt-4',
-        'prompt' => "Write a detailed blog post about $keyword.",
-        'max_tokens' => 500
-    ];
-    
-    $response = wp_remote_post($url, [
-        'headers' => [
-            'Authorization' => 'Bearer ' . $openai_api_key,
-            'Content-Type' => 'application/json'
-        ],
-        'body' => json_encode($data)
-    ]);
-    
+    $response = wp_remote_get($url);
     if (is_wp_error($response)) {
-        echo "Error retrieving AI-generated content.";
+        echo "Error retrieving Wikipedia content.";
         return;
     }
     
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    $generated_text = $body['choices'][0]['text'] ?? "No AI content available.";
+    $pages = $body['query']['pages'] ?? [];
+    $generated_text = "No Wikipedia content available.";
+    
+    foreach ($pages as $page) {
+        if (isset($page['extract'])) {
+            $generated_text = $page['extract'];
+            break;
+        }
+    }
     
     $image_url = get_related_image($keyword);
     if ($image_url) {
